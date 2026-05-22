@@ -8,19 +8,9 @@
     {
       "src": "backend/app/main.py",
       "use": "@vercel/python"
-    },
-    {
-      "src": "api/test.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/debug.py",
-      "use": "@vercel/python"
     }
   ],
   "routes": [
-    { "src": "/api/test", "dest": "api/test.py" },
-    { "src": "/api/debug", "dest": "api/debug.py" },
     { "src": "/api/(.*)", "dest": "backend/app/main.py" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "frontend/$1" }
