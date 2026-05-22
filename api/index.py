@@ -9,10 +9,25 @@ try:
     # Import the FastAPI app from the backend package
     from app.main import app
 except Exception as e:
-    from fastapi import FastAPI
-    app = FastAPI()
-    err_info = {"error": str(e), "traceback": traceback.format_exc(), "cwd": os.getcwd(), "files": os.listdir('.')}
+    from http.server import BaseHTTPRequestHandler
     
-    @app.api_route("/{path_name:path}", methods=["GET", "POST", "PUT", "DELETE"])
-    def catch_all(path_name: str):
-        return err_info
+    class handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            
+            error_msg = f"Error: {e}\n\nTraceback:\n{traceback.format_exc()}\n\nCWD: {os.getcwd()}\nFiles: {os.listdir('.')}"
+            self.wfile.write(error_msg.encode('utf-8'))
+        
+        def do_POST(self):
+            self.do_GET()
+        
+        def do_PUT(self):
+            self.do_GET()
+        
+        def do_DELETE(self):
+            self.do_GET()
+            
+    # For Vercel Python runtime, if it's not a FastAPI/Flask/Django app, 
+    # it expects a class named 'handler' subclassing BaseHTTPRequestHandler.
