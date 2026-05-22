@@ -1,13 +1,26 @@
 {
-    "experimentalServices": {
-        "frontend": {
-            "root": "frontend",
-            "routePrefix": "/",
-            "framework": "vite"
-        },
-        "backend": {
-            "root": "backend",
-            "routePrefix": "/_/backend"
-        }
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    },
+    {
+      "src": "backend/app/main.py",
+      "use": "@vercel/python"
     }
+  ],
+  "routes": [
+    { "src": "/auth/(.*)", "dest": "backend/app/main.py" },
+    { "src": "/analyze(.*)", "dest": "backend/app/main.py" },
+    { "src": "/resumes(.*)", "dest": "backend/app/main.py" },
+    { "src": "/match(.*)", "dest": "backend/app/main.py" },
+    { "src": "/dashboard/(.*)", "dest": "backend/app/main.py" },
+    { "src": "/export/(.*)", "dest": "backend/app/main.py" },
+    { "src": "/chatbot", "dest": "backend/app/main.py" },
+    { "src": "/(.*)", "dest": "frontend/$1" }
+  ]
 }
