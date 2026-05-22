@@ -7,4 +7,5 @@ pydantic
 sqlalchemy
 python-jose[cryptography]
 passlib[bcrypt]
+bcrypt
 python-dotenv

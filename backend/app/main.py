@@ -5,12 +5,17 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 import uvicorn
 import os
+import sys
 import shutil
 import json
 import csv
 import io
 from datetime import datetime
 from dotenv import load_dotenv
+
+# Ensure the 'backend' directory is on sys.path so 'from app.xxx' imports work
+# when Vercel runs from the repo root instead of from backend/
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 load_dotenv()
 
