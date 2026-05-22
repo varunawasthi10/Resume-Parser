@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.db
+
+# Environment
+.env
+.env.local
+
+# Uploads
+uploads/
+
+# OS
+.DS_Store
+Thumbs.db

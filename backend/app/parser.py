@@ -3,11 +3,8 @@ import pdfplumber
 import docx
 from typing import Dict, List, Any
 
-try:
-    import spacy
-    nlp = spacy.load("en_core_web_sm")
-except:
-    nlp = None
+# spaCy removed — exceeds Vercel's 250MB serverless function size limit
+# Name extraction uses regex fallback below
 
 # Expanded skill database organized by category
 SKILL_CATEGORIES = {
@@ -96,12 +93,7 @@ def extract_contact_info(text: str) -> Dict[str, str]:
     }
 
 def extract_name(text: str) -> str:
-    if nlp:
-        doc = nlp(text[:1500])
-        for ent in doc.ents:
-            if ent.label_ == "PERSON":
-                return ent.text
-    # Fallback: first non-empty line
+    # Use first non-empty line that looks like a name (no digits, no @, under 50 chars)
     for line in text.split("\n"):
         line = line.strip()
         if line and len(line) < 50 and not re.search(r'[@\d]', line):

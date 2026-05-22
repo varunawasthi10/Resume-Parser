@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Form, Query
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Form, Query, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -34,20 +34,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-UPLOAD_DIR = "uploads"
+UPLOAD_DIR = "/tmp/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Initialize DB at module level for serverless (no startup event in Vercel)
+init_db()
 
 @app.on_event("startup")
 def on_startup():
     init_db()
 
+# ─── All routes on a router so we can mount at both "/" and "/api" ───
+router = APIRouter()
+
 # ─── Health Check ──────────────────────────────────────────
-@app.get("/")
+@router.get("/")
 async def root():
     return {"message": "AI Resume Parser API v2.0", "status": "running"}
 
 # ─── AUTH ROUTES ───────────────────────────────────────────
-@app.post("/auth/register", response_model=Token)
+@router.post("/auth/register", response_model=Token)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     user = register_user(db, user_data.email, user_data.username, user_data.password, user_data.full_name)
     token = create_access_token(data={"sub": str(user.id)})
@@ -60,7 +66,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         }
     )
 
-@app.post("/auth/login", response_model=Token)
+@router.post("/auth/login", response_model=Token)
 async def login(user_data: UserLogin, db: Session = Depends(get_db)):
     user = authenticate_user(db, user_data.email, user_data.password)
     token = create_access_token(data={"sub": str(user.id)})
@@ -73,7 +79,7 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
         }
     )
 
-@app.get("/auth/me")
+@router.get("/auth/me")
 async def get_me(current_user: User = Depends(get_current_user)):
     return {
         "id": current_user.id, "email": current_user.email,
@@ -82,7 +88,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
     }
 
 # ─── SINGLE RESUME ANALYSIS ──────────────────────────────
-@app.post("/analyze")
+@router.post("/analyze")
 async def analyze_resume(
     file: UploadFile = File(...),
     jd: Optional[str] = Form(None),
@@ -159,7 +165,7 @@ async def analyze_resume(
     }
 
 # ─── BATCH SCREENING ─────────────────────────────────────
-@app.post("/analyze/batch")
+@router.post("/analyze/batch")
 async def analyze_batch(
     files: List[UploadFile] = File(...),
     jd: Optional[str] = Form(None),
@@ -219,7 +225,7 @@ async def analyze_batch(
     }
 
 # ─── GET RESUMES ──────────────────────────────────────────
-@app.get("/resumes")
+@router.get("/resumes")
 async def get_resumes(
     skip: int = 0,
     limit: int = 50,
@@ -239,7 +245,7 @@ async def get_resumes(
         "total": total
     }
 
-@app.get("/resumes/{resume_id}")
+@router.get("/resumes/{resume_id}")
 async def get_resume(
     resume_id: int,
     db: Session = Depends(get_db),
@@ -261,7 +267,7 @@ async def get_resume(
         "created_at": str(resume.created_at)
     }
 
-@app.delete("/resumes/{resume_id}")
+@router.delete("/resumes/{resume_id}")
 async def delete_resume(
     resume_id: int,
     db: Session = Depends(get_db),
@@ -275,7 +281,7 @@ async def delete_resume(
     return {"message": "Resume deleted"}
 
 # ─── JD MATCH ENDPOINT ───────────────────────────────────
-@app.post("/match")
+@router.post("/match")
 async def match_jd(
     resume_id: int = Form(...),
     jd: str = Form(...),
@@ -298,7 +304,7 @@ async def match_jd(
     }
 
 # ─── DASHBOARD STATS ─────────────────────────────────────
-@app.get("/dashboard/stats")
+@router.get("/dashboard/stats")
 async def dashboard_stats(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -350,7 +356,7 @@ async def dashboard_stats(
     }
 
 # ─── EXPORT CSV ───────────────────────────────────────────
-@app.get("/export/csv")
+@router.get("/export/csv")
 async def export_csv(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -376,7 +382,7 @@ async def export_csv(
     )
 
 # ─── AI CHATBOT ───────────────────────────────────────────
-@app.post("/chatbot")
+@router.post("/chatbot")
 async def chatbot(
     message: str = Form(...),
     current_user: User = Depends(get_current_user)
@@ -393,6 +399,10 @@ async def chatbot(
         return {"response": "Resume format best practices:\n\n1. Use **reverse chronological** order\n2. Font: **Inter, Calibri, or Arial** (10-12pt)\n3. Margins: **0.5-1 inch** all sides\n4. Include: Contact → Summary → Experience → Education → Skills\n5. Use **bullet points** not paragraphs\n6. **Bold** job titles and company names"}
     else:
         return {"response": f"I'm your AI Resume Assistant! I can help with:\n\n• **Resume improvement tips** — ask 'How to improve my resume?'\n• **ATS optimization** — ask 'How to beat ATS?'\n• **Skill recommendations** — ask 'What skills should I learn?'\n• **Format advice** — ask 'Best resume format?'\n\nJust type your question and I'll guide you! 🚀"}
+
+# Mount the router at both "/" (for local dev) and "/api" (for Vercel production)
+app.include_router(router)
+app.include_router(router, prefix="/api")
 
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

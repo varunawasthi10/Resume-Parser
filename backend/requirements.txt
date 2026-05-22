@@ -3,12 +3,8 @@ uvicorn
 python-multipart
 pdfplumber
 python-docx
-spacy
-scikit-learn
 pydantic
 sqlalchemy
 python-jose[cryptography]
 passlib[bcrypt]
 python-dotenv
-pandas
-openpyxl
