@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 load_dotenv()
 
-from app.database import get_db, init_db
+from app.database import get_db, init_db, SessionLocal
 from app.models import User, Resume
 from app.schemas import UserCreate, UserLogin, Token, ResumeResponse, DashboardStats
 from app.auth import (
@@ -56,6 +56,31 @@ router = APIRouter()
 @router.get("/")
 async def root():
     return {"message": "AI Resume Parser API v2.0", "status": "running"}
+
+@router.get("/health")
+async def health_check():
+    """Diagnostic endpoint to verify DB connection."""
+    import traceback
+    db_url = os.getenv("DATABASE_URL", "NOT SET")
+    # Mask password in URL for safe display
+    safe_url = db_url
+    if "@" in db_url:
+        parts = db_url.split("@")
+        creds = parts[0].rsplit(":", 1)
+        safe_url = f"{creds[0]}:****@{parts[1]}" if len(creds) > 1 else db_url
+    
+    result = {"database_url_set": db_url != "NOT SET", "safe_url": safe_url}
+    try:
+        from sqlalchemy import text as sa_text
+        db = SessionLocal()
+        db.execute(sa_text("SELECT 1"))
+        db.close()
+        result["db_connection"] = "SUCCESS"
+    except Exception as e:
+        result["db_connection"] = "FAILED"
+        result["error"] = str(e)
+        result["traceback"] = traceback.format_exc()
+    return result
 
 # ─── AUTH ROUTES ───────────────────────────────────────────
 @router.post("/auth/register", response_model=Token)
