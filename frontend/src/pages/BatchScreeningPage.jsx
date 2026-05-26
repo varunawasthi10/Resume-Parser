@@ -56,7 +56,13 @@ const BatchScreeningPage = () => {
               <h3 className="text-xl font-bold mb-2">Upload Multiple Resumes</h3>
               <p className="text-slate-400 text-sm mb-6">Select multiple PDF/DOCX files at once</p>
               <input type="file" id="batch-upload" className="hidden" multiple accept=".pdf,.docx"
-                onChange={(e) => setFiles(e.target.files)} />
+                onChange={(e) => {
+                  const selectedFiles = Array.from(e.target.files);
+                  if (selectedFiles.length > 0) {
+                    setFiles(prev => [...prev, ...selectedFiles]);
+                  }
+                  e.target.value = '';
+                }} />
               <label htmlFor="batch-upload" className="btn-primary cursor-pointer">
                 {files.length > 0 ? `${files.length} files selected` : 'Select Files'}
               </label>

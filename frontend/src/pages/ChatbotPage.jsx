@@ -67,7 +67,7 @@ const ChatbotPage = () => {
                   <div className={`p-4 rounded-2xl text-sm whitespace-pre-line leading-relaxed ${
                     msg.role === 'user'
                       ? 'bg-indigo-500 text-white rounded-tr-sm'
-                      : 'bg-white/5 border border-white/10 text-slate-200 rounded-tl-sm'}`}>
+                      : 'bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-gray-900 dark:text-slate-200 rounded-tl-sm'}`}>
                     {msg.text}
                   </div>
                 </div>
